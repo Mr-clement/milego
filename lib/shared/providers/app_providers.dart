@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/theme/app_colors.dart';
 import '../data/mock_data.dart';
 import '../models/models.dart';
 
@@ -17,6 +18,9 @@ class TransactionsNotifier extends StateNotifier<List<Transaction>> {
 
   void add(Transaction tx) => state = [tx, ...state];
 
+  void update(Transaction tx) =>
+      state = [for (final t in state) t.id == tx.id ? tx : t];
+
   void remove(String id) =>
       state = state.where((t) => t.id != id).toList();
 }
@@ -25,7 +29,46 @@ final transactionsProvider =
     StateNotifierProvider<TransactionsNotifier, List<Transaction>>(
         (ref) => TransactionsNotifier());
 
-final goalsProvider = Provider<List<SavingGoal>>((ref) => MockData.goals());
+/// Petite palette pour assigner icône/couleur aux nouveaux objectifs (pas de
+/// sélecteur en v1 — cf. spec).
+const _goalPalette = <(IconData, Color)>[
+  (Icons.savings_rounded, AppColors.primary),
+  (Icons.flag_rounded, Color(0xFF6D82FF)),
+  (Icons.emoji_events_rounded, Color(0xFF16B364)),
+  (Icons.star_rounded, AppColors.donutColor2),
+];
+
+class GoalsNotifier extends StateNotifier<List<SavingGoal>> {
+  GoalsNotifier() : super(MockData.goals());
+
+  void add({
+    required String name,
+    required double targetAmount,
+    required double currentAmount,
+    required DateTime deadline,
+  }) {
+    final (icon, color) = _goalPalette[state.length % _goalPalette.length];
+    state = [
+      ...state,
+      SavingGoal(
+        id: 'g${DateTime.now().microsecondsSinceEpoch}',
+        name: name,
+        targetAmount: targetAmount,
+        currentAmount: currentAmount,
+        deadline: deadline,
+        icon: icon,
+        color: color,
+      ),
+    ];
+  }
+
+  void remove(String id) =>
+      state = state.where((g) => g.id != id).toList();
+}
+
+final goalsProvider =
+    StateNotifierProvider<GoalsNotifier, List<SavingGoal>>(
+        (ref) => GoalsNotifier());
 
 final insightProvider = Provider<AiInsight>((ref) => MockData.insight);
 

@@ -7,9 +7,12 @@ import '../../shared/data/mock_data.dart';
 import '../../shared/models/models.dart';
 import '../../shared/providers/app_providers.dart';
 
-/// Feuille modale d'ajout d'une transaction (revenu / dépense).
+/// Feuille modale d'ajout (ou d'édition si [existing] est fourni) d'une
+/// transaction (revenu / dépense).
 class AddTransactionSheet extends ConsumerStatefulWidget {
-  const AddTransactionSheet({super.key});
+  const AddTransactionSheet({super.key, this.existing});
+
+  final Transaction? existing;
 
   @override
   ConsumerState<AddTransactionSheet> createState() =>
@@ -17,10 +20,14 @@ class AddTransactionSheet extends ConsumerStatefulWidget {
 }
 
 class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
-  final _title = TextEditingController();
-  final _amount = TextEditingController();
-  TxType _type = TxType.expense;
-  String _categoryId = 'nourriture';
+  late final _title =
+      TextEditingController(text: widget.existing?.title);
+  late final _amount = TextEditingController(
+      text: widget.existing?.amount.toStringAsFixed(0));
+  late TxType _type = widget.existing?.type ?? TxType.expense;
+  late String _categoryId = widget.existing?.categoryId ?? 'nourriture';
+
+  bool get _isEditing => widget.existing != null;
 
   @override
   void dispose() {
@@ -32,17 +39,36 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   void _save() {
     final amount = double.tryParse(_amount.text.replaceAll(' ', '')) ?? 0;
     if (_title.text.trim().isEmpty || amount <= 0) return;
-    ref.read(transactionsProvider.notifier).add(
-          Transaction(
-            id: 'tx${DateTime.now().microsecondsSinceEpoch}',
-            title: _title.text.trim(),
-            amount: amount,
-            type: _type,
-            categoryId:
-                _type == TxType.income ? 'salaire' : _categoryId,
-            date: DateTime.now(),
-          ),
-        );
+    final categoryId = _type == TxType.income ? 'salaire' : _categoryId;
+    if (_isEditing) {
+      ref.read(transactionsProvider.notifier).update(
+            Transaction(
+              id: widget.existing!.id,
+              title: _title.text.trim(),
+              amount: amount,
+              type: _type,
+              categoryId: categoryId,
+              date: widget.existing!.date,
+              note: widget.existing!.note,
+            ),
+          );
+    } else {
+      ref.read(transactionsProvider.notifier).add(
+            Transaction(
+              id: 'tx${DateTime.now().microsecondsSinceEpoch}',
+              title: _title.text.trim(),
+              amount: amount,
+              type: _type,
+              categoryId: categoryId,
+              date: DateTime.now(),
+            ),
+          );
+    }
+    Navigator.of(context).pop();
+  }
+
+  void _delete() {
+    ref.read(transactionsProvider.notifier).remove(widget.existing!.id);
     Navigator.of(context).pop();
   }
 
@@ -78,7 +104,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
               ),
             ),
             const SizedBox(height: 16),
-            Text('Nouvelle transaction',
+            Text(_isEditing ? 'Modifier la transaction' : 'Nouvelle transaction',
                 style: TextStyle(
                     color: c.textPrimary,
                     fontSize: 18,
@@ -152,6 +178,18 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
               child: const Text('Enregistrer',
                   style: TextStyle(fontWeight: FontWeight.w700)),
             ),
+            if (_isEditing) ...[
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: _delete,
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.expense,
+                  minimumSize: const Size(double.infinity, 44),
+                ),
+                child: const Text('Supprimer',
+                    style: TextStyle(fontWeight: FontWeight.w700)),
+              ),
+            ],
           ],
         ),
       ),
