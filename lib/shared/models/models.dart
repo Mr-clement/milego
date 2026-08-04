@@ -19,6 +19,11 @@ class Category {
   final Color color;
 }
 
+extension CategoryLookup on List<Category> {
+  Category byId(String id) =>
+      firstWhere((c) => c.id == id, orElse: () => last);
+}
+
 @immutable
 class Transaction {
   const Transaction({

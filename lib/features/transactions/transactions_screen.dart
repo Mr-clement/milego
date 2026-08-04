@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
-import '../../shared/data/mock_data.dart';
 import '../../shared/models/models.dart';
 import '../../shared/providers/app_providers.dart';
 import '../../shared/widgets/confirm_delete_dialog.dart';
@@ -25,11 +25,12 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   Widget build(BuildContext context) {
     final c = context.milego;
     final txs = ref.watch(transactionsProvider);
+    final categories = ref.watch(categoriesProvider);
     final filtered = txs.where((t) {
       if (_query.isEmpty) return true;
       final q = _query.toLowerCase();
       return t.title.toLowerCase().contains(q) ||
-          MockData.categoryById(t.categoryId).name.toLowerCase().contains(q);
+          categories.byId(t.categoryId).name.toLowerCase().contains(q);
     }).toList();
 
     return SafeArea(
@@ -96,7 +97,13 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                 : ListView.builder(
                     padding: const EdgeInsets.fromLTRB(18, 8, 18, 120),
                     itemCount: filtered.length,
-                    itemBuilder: (_, i) => _TxTile(tx: filtered[i]),
+                    itemBuilder: (_, i) => _TxTile(tx: filtered[i])
+                        .animate()
+                        .fadeIn(
+                          duration: 220.ms,
+                          delay: (i * 25).clamp(0, 200).ms,
+                        )
+                        .slideY(begin: 0.06, curve: Curves.easeOut),
                   ),
           ),
         ],
@@ -121,7 +128,7 @@ class _TxTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.milego;
-    final cat = MockData.categoryById(tx.categoryId);
+    final cat = ref.watch(categoriesProvider).byId(tx.categoryId);
     final isIncome = tx.type == TxType.income;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),

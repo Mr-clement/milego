@@ -32,9 +32,9 @@ class MilegoCard extends StatelessWidget {
         border: border ? Border.all(color: c.border) : null,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
+            color: const Color(0xFF0B2E6E).withValues(alpha: 0.04),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
           ),
         ],
       ),

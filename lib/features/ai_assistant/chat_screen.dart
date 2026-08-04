@@ -5,11 +5,14 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/models/models.dart';
 import '../../shared/providers/app_providers.dart';
+import 'gemini_service.dart';
 import 'lea_responder.dart';
 
 /// Chat conversationnel avec l'assistante Léa.
-/// MVP : réponses générées localement à partir du contexte financier
-/// (remplacera l'appel au microservice Python — cahier des charges §3.2 / §5.3).
+/// Réponses générées par l'API Gemini, alimentée par le contexte financier
+/// réel de l'utilisateur (doublure du microservice Python prévu au cahier
+/// des charges §3.2). En cas d'échec réseau/API, repli automatique sur les
+/// réponses locales basées sur des règles (§2 : dégradation gracieuse).
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
 
@@ -46,7 +49,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (text.isEmpty) return;
     final summary = ref.read(monthSummaryProvider);
     final goals = ref.read(goalsProvider);
+    final categories = ref.read(categoriesProvider);
 
+    final history = List<ChatMessage>.from(_messages);
     setState(() {
       _messages.add(ChatMessage(
           role: ChatRole.user, content: text, timestamp: DateTime.now()));
@@ -55,9 +60,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     });
     _scrollDown();
 
-    // Simule la latence du service IA.
-    await Future.delayed(const Duration(milliseconds: 650));
-    final reply = LeaResponder.reply(text, summary, goals);
+    String reply;
+    try {
+      reply = await GeminiService.reply(
+        question: text,
+        summary: summary,
+        goals: goals,
+        categories: categories,
+        history: history,
+      );
+    } catch (_) {
+      reply = LeaResponder.reply(text, summary, goals, categories);
+    }
     if (!mounted) return;
     setState(() {
       _typing = false;

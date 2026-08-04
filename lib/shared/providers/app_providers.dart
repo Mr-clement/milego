@@ -1,9 +1,35 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:isar_community/isar.dart';
 
-import '../../core/theme/app_colors.dart';
+import '../../core/services/auth/auth_service.dart';
+import '../../core/services/isar/fast_hash.dart';
+import '../../core/services/isar/goal_entity.dart';
+import '../../core/services/isar/goal_palette.dart';
+import '../../core/services/isar/transaction_entity.dart';
 import '../data/mock_data.dart';
 import '../models/models.dart';
+
+/// Instance Isar ouverte, injectée via `overrideWithValue` dans `main()`
+/// (et dans les tests) — voir `core/services/isar/isar_service.dart`.
+final isarProvider = Provider<Isar>(
+  (ref) => throw UnimplementedError('isarProvider doit être surchargé (voir main.dart)'),
+);
+
+/// Authentification locale, injectée via `overrideWithValue` dans `main()`
+/// (et dans les tests) — voir `core/services/auth/auth_service.dart`.
+final authServiceProvider = Provider<AuthService>(
+  (ref) => throw UnimplementedError('authServiceProvider doit être surchargé (voir main.dart)'),
+);
+
+/// Catégories persistées (lecture seule pour l'instant, pas d'UI de
+/// création/édition — voir spec Isar, section « Hors scope »). Chargées et
+/// injectées via `overrideWithValue` dans `main()`.
+final categoriesProvider = Provider<List<Category>>(
+  (ref) => throw UnimplementedError('categoriesProvider doit être surchargé (voir main.dart)'),
+);
 
 /// Thème clair / sombre (toggle via l'icône soleil de l'en-tête).
 final themeModeProvider =
@@ -12,34 +38,44 @@ final themeModeProvider =
 /// Nom affiché dans la salutation.
 final userNameProvider = StateProvider<String>((ref) => 'Clément');
 
-/// Source des transactions (MVP : en mémoire, mutable).
+/// Source des transactions, persistée dans Isar. L'état local est mis à
+/// jour immédiatement (UI réactive), l'écriture Isar se fait en tâche de
+/// fond (pas de retry/rollback — hors scope MVP, écriture locale fiable).
 class TransactionsNotifier extends StateNotifier<List<Transaction>> {
-  TransactionsNotifier() : super(MockData.transactions());
+  TransactionsNotifier(this._isar, List<Transaction> initial) : super(initial);
 
-  void add(Transaction tx) => state = [tx, ...state];
+  final Isar _isar;
 
-  void update(Transaction tx) =>
-      state = [for (final t in state) t.id == tx.id ? tx : t];
+  void add(Transaction tx) {
+    state = [tx, ...state];
+    unawaited(_isar.writeTxn(
+        () => _isar.transactionEntitys.put(TransactionEntity.fromDomain(tx))));
+  }
 
-  void remove(String id) =>
-      state = state.where((t) => t.id != id).toList();
+  void update(Transaction tx) {
+    state = [for (final t in state) t.id == tx.id ? tx : t];
+    unawaited(_isar.writeTxn(
+        () => _isar.transactionEntitys.put(TransactionEntity.fromDomain(tx))));
+  }
+
+  void remove(String id) {
+    state = state.where((t) => t.id != id).toList();
+    unawaited(_isar
+        .writeTxn(() => _isar.transactionEntitys.delete(fastHash(id))));
+  }
 }
 
 final transactionsProvider =
     StateNotifierProvider<TransactionsNotifier, List<Transaction>>(
-        (ref) => TransactionsNotifier());
+  (ref) => throw UnimplementedError('transactionsProvider doit être surchargé (voir main.dart)'),
+);
 
-/// Petite palette pour assigner icône/couleur aux nouveaux objectifs (pas de
-/// sélecteur en v1 — cf. spec).
-const _goalPalette = <(IconData, Color)>[
-  (Icons.savings_rounded, AppColors.primary),
-  (Icons.flag_rounded, Color(0xFF6D82FF)),
-  (Icons.emoji_events_rounded, Color(0xFF16B364)),
-  (Icons.star_rounded, AppColors.donutColor2),
-];
-
+/// Source des objectifs d'épargne, persistée dans Isar (même principe que
+/// [TransactionsNotifier]).
 class GoalsNotifier extends StateNotifier<List<SavingGoal>> {
-  GoalsNotifier() : super(MockData.goals());
+  GoalsNotifier(this._isar, List<SavingGoal> initial) : super(initial);
+
+  final Isar _isar;
 
   void add({
     required String name,
@@ -47,11 +83,13 @@ class GoalsNotifier extends StateNotifier<List<SavingGoal>> {
     required double currentAmount,
     required DateTime deadline,
   }) {
-    final (icon, color) = _goalPalette[state.length % _goalPalette.length];
+    final paletteIndex = state.length % GoalPalette.entries.length;
+    final (icon, color) = GoalPalette.entries[paletteIndex];
+    final id = 'g${DateTime.now().microsecondsSinceEpoch}';
     state = [
       ...state,
       SavingGoal(
-        id: 'g${DateTime.now().microsecondsSinceEpoch}',
+        id: id,
         name: name,
         targetAmount: targetAmount,
         currentAmount: currentAmount,
@@ -60,17 +98,36 @@ class GoalsNotifier extends StateNotifier<List<SavingGoal>> {
         color: color,
       ),
     ];
+    final entity = GoalEntity()
+      ..goalId = id
+      ..name = name
+      ..targetAmount = targetAmount
+      ..currentAmount = currentAmount
+      ..deadline = deadline
+      ..paletteIndex = paletteIndex;
+    unawaited(_isar.writeTxn(() => _isar.goalEntitys.put(entity)));
   }
 
-  void remove(String id) =>
-      state = state.where((g) => g.id != id).toList();
+  void remove(String id) {
+    state = state.where((g) => g.id != id).toList();
+    unawaited(_isar.writeTxn(() => _isar.goalEntitys.delete(fastHash(id))));
+  }
 }
 
 final goalsProvider =
     StateNotifierProvider<GoalsNotifier, List<SavingGoal>>(
-        (ref) => GoalsNotifier());
+  (ref) => throw UnimplementedError('goalsProvider doit être surchargé (voir main.dart)'),
+);
 
 final insightProvider = Provider<AiInsight>((ref) => MockData.insight);
+
+/// Solde cumulé (tous les revenus moins toutes les dépenses, tout
+/// l'historique) — distinct de `monthSummaryProvider` qui reste borné au
+/// mois courant (budget). Voir l'écran Rapports.
+final globalBalanceProvider = Provider<double>((ref) {
+  final txs = ref.watch(transactionsProvider);
+  return txs.fold(0.0, (sum, t) => sum + t.signedAmount);
+});
 
 /// Agrégats du mois courant dérivés des transactions.
 class MonthSummary {

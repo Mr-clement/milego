@@ -17,6 +17,7 @@ class AdviceCard extends StatelessWidget {
     final c = context.milego;
     return MilegoCard(
       color: c.surfaceAlt,
+      padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -45,19 +46,19 @@ class AdviceCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Text(
             insight.content,
             style: TextStyle(
-                color: c.textMuted, fontSize: 14, height: 1.45),
+                color: c.textMuted, fontSize: 13, height: 1.4),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
           OutlinedButton(
             onPressed: onOpenChat,
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.primary,
               side: const BorderSide(color: AppColors.primary),
-              minimumSize: const Size(double.infinity, 46),
+              minimumSize: const Size(double.infinity, 42),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppRadius.button),
               ),

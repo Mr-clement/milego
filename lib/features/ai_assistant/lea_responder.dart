@@ -1,5 +1,4 @@
 import '../../core/utils/formatters.dart';
-import '../../shared/data/mock_data.dart';
 import '../../shared/models/models.dart';
 import '../../shared/providers/app_providers.dart';
 
@@ -13,6 +12,7 @@ class LeaResponder {
     String question,
     MonthSummary s,
     List<SavingGoal> goals,
+    List<Category> categories,
   ) {
     final q = question.toLowerCase();
 
@@ -29,7 +29,7 @@ class LeaResponder {
       }
       final top = s.byCategory.take(3).map((e) {
         final pct = (e.value / s.expense * 100).round();
-        return '${MockData.categoryById(e.key).name} ($pct %, ${Money.full(e.value)})';
+        return '${categories.byId(e.key).name} ($pct %, ${Money.full(e.value)})';
       }).join(', ');
       return 'Vos principales dépenses du mois : $top. C\'est le poste le plus '
           'important qui offre le meilleur levier d\'économie.';

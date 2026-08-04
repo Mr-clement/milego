@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
-import '../../../shared/data/mock_data.dart';
+import '../../../shared/models/models.dart';
 import '../../../shared/widgets/milego_card.dart';
 
 /// Carte « Répartition des dépenses » : donut + légende (montants / %).
@@ -13,11 +13,15 @@ class ExpenseBreakdownCard extends StatelessWidget {
     super.key,
     required this.byCategory,
     required this.total,
+    required this.categories,
+    this.onTap,
   });
 
   /// Entrées categoryId -> montant, triées décroissant.
   final List<MapEntry<String, double>> byCategory;
   final double total;
+  final List<Category> categories;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +38,7 @@ class ExpenseBreakdownCard extends StatelessWidget {
     final colors = AppColors.donut;
 
     return MilegoCard(
+      onTap: onTap,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -96,7 +101,7 @@ class ExpenseBreakdownCard extends StatelessWidget {
                     for (var i = 0; i < entries.length; i++)
                       _LegendRow(
                         color: colors[i % colors.length],
-                        label: MockData.categoryById(entries[i].key).name,
+                        label: categories.byId(entries[i].key).name,
                         percent: total == 0
                             ? 0
                             : (entries[i].value / total * 100).round(),

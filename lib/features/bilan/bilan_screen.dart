@@ -20,12 +20,13 @@ class BilanScreen extends ConsumerWidget {
     final name = ref.watch(userNameProvider);
     final summary = ref.watch(monthSummaryProvider);
     final insight = ref.watch(insightProvider);
+    final categories = ref.watch(categoriesProvider);
     final isDark = ref.watch(themeModeProvider) == ThemeMode.dark;
 
     return SafeArea(
       bottom: false,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(18, 12, 18, 120),
+        padding: const EdgeInsets.fromLTRB(18, 14, 18, 112),
         children: [
           // En-tête
           Row(
@@ -55,31 +56,37 @@ class BilanScreen extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 12),
 
           BalanceHeroCard(
             remaining: summary.remaining,
             budget: summary.budget,
             usedRatio: summary.budgetUsedRatio,
+            onTap: () => context.push('/rapports'),
           ).animate().fadeIn(duration: 350.ms).slideY(begin: 0.08),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
 
           QuickStatsRow(
             income: summary.income,
             expense: summary.expense,
             savings: summary.savings,
+            onTapIncome: () => context.go('/transactions'),
+            onTapExpense: () => context.push('/rapports'),
+            onTapSavings: () => context.go('/objectifs'),
           ).animate().fadeIn(delay: 80.ms, duration: 350.ms),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
 
           AdviceCard(
             insight: insight,
             onOpenChat: () => context.push('/chat'),
           ).animate().fadeIn(delay: 140.ms, duration: 350.ms),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
 
           ExpenseBreakdownCard(
             byCategory: summary.byCategory,
             total: summary.expense,
+            categories: categories,
+            onTap: () => context.push('/rapports'),
           ).animate().fadeIn(delay: 200.ms, duration: 350.ms),
         ],
       ),

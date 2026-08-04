@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
-import '../../shared/data/mock_data.dart';
 import '../../shared/models/models.dart';
 import '../../shared/providers/app_providers.dart';
 
@@ -75,8 +74,10 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   @override
   Widget build(BuildContext context) {
     final c = context.milego;
-    final expenseCats =
-        MockData.categories.where((cat) => cat.id != 'salaire').toList();
+    final expenseCats = ref
+        .watch(categoriesProvider)
+        .where((cat) => cat.id != 'salaire')
+        .toList();
 
     return Padding(
       padding: EdgeInsets.only(

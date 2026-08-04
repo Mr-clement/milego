@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
@@ -59,8 +60,14 @@ class GoalsScreen extends ConsumerWidget {
               ),
             )
           else
-            for (final g in goals) ...[
-              _GoalCard(goal: g),
+            for (final (i, g) in goals.indexed) ...[
+              _GoalCard(goal: g)
+                  .animate()
+                  .fadeIn(
+                    duration: 220.ms,
+                    delay: (i * 25).clamp(0, 200).ms,
+                  )
+                  .slideY(begin: 0.06, curve: Curves.easeOut),
               const SizedBox(height: 12),
             ],
         ],

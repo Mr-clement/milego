@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/providers/app_providers.dart';
 import '../../shared/widgets/milego_card.dart';
@@ -46,6 +48,17 @@ class SettingsScreen extends ConsumerWidget {
               ],
             ),
           ),
+          const SizedBox(height: 16),
+          MilegoCard(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            child: ListTile(
+              leading: const Icon(Icons.logout_rounded, color: AppColors.expense),
+              title: const Text('Déconnexion',
+                  style: TextStyle(
+                      color: AppColors.expense, fontWeight: FontWeight.w600)),
+              onTap: () => _confirmLogout(context, ref),
+            ),
+          ),
           const SizedBox(height: 20),
           Center(
             child: Text('Milego Budget · v1.0.0 (MVP)',
@@ -54,6 +67,30 @@ class SettingsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Se déconnecter ?'),
+        content: const Text('Vos données restent sur cet appareil.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.expense),
+            child: const Text('Déconnexion'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await ref.read(authServiceProvider).logOut();
+    if (context.mounted) context.go('/login');
   }
 
   Widget _tile(MilegoColors c, IconData icon, String title, String? value) {

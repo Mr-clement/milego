@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/theme/app_theme.dart';
+import '../../core/theme/app_colors.dart';
 
 /// Coquille principale : bottom navigation + bouton flottant Assistant IA.
 class AppShell extends StatelessWidget {
@@ -23,27 +23,27 @@ class AppShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.milego;
     return Scaffold(
       body: navigationShell,
+      floatingActionButtonLocation: const _EndFloatRaised(),
       floatingActionButton: FloatingActionButton(
         heroTag: 'chat-fab',
-        backgroundColor: c.textPrimary,
-        foregroundColor: c.surface,
+        backgroundColor: AppColors.accent,
+        foregroundColor: AppColors.primary,
         elevation: 4,
         shape: const CircleBorder(),
         onPressed: () => context.push('/chat'),
         child: const Icon(Icons.chat_bubble_rounded, size: 22),
       ),
       bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: c.surface,
-          border: Border(top: BorderSide(color: c.border)),
+        decoration: const BoxDecoration(
+          color: AppColors.primary,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: SafeArea(
           top: false,
           child: SizedBox(
-            height: 64,
+            height: 66,
             child: Row(
               children: [
                 for (var i = 0; i < _items.length; i++)
@@ -60,6 +60,18 @@ class AppShell extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Position du bouton flottant : comme `endFloat` (bas-droite au-dessus de la
+/// barre de nav), mais remonté de 18 px pour un espacement plus propre.
+class _EndFloatRaised extends FloatingActionButtonLocation {
+  const _EndFloatRaised();
+
+  @override
+  Offset getOffset(ScaffoldPrelayoutGeometry geometry) {
+    final base = FloatingActionButtonLocation.endFloat.getOffset(geometry);
+    return Offset(base.dx, base.dy - 18);
   }
 }
 
@@ -82,8 +94,8 @@ class _NavButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.milego;
-    final color = selected ? Theme.of(context).colorScheme.primary : c.textMuted;
+    final color =
+        selected ? AppColors.accent : Colors.white.withValues(alpha: 0.65);
     return InkWell(
       onTap: onTap,
       child: Column(
