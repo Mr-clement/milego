@@ -6,6 +6,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
 import '../../shared/models/models.dart';
 import '../../shared/providers/app_providers.dart';
+import '../../shared/widgets/type_pill.dart';
 import '../bilan/widgets/expense_breakdown_card.dart';
 import 'period_utils.dart';
 
@@ -98,13 +99,13 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             const SizedBox(height: 20),
             Row(
               children: [
-                _TypePill(
+                TypePill(
                   label: 'Dépenses',
                   selected: _txType == TxType.expense,
                   onTap: () => setState(() => _txType = TxType.expense),
                 ),
                 const SizedBox(width: 10),
-                _TypePill(
+                TypePill(
                   label: 'Revenus',
                   selected: _txType == TxType.income,
                   onTap: () => setState(() => _txType = TxType.income),
@@ -160,6 +161,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                         ),
                       )
                     : ExpenseBreakdownCard(
+                        title: _txType == TxType.expense
+                            ? 'Répartition des dépenses'
+                            : 'Répartition des revenus',
                         byCategory: summary.byCategory,
                         total: summary.total,
                         categories: categories,
@@ -183,40 +187,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       case PeriodType.year:
         return 'Année';
     }
-  }
-}
-
-class _TypePill extends StatelessWidget {
-  const _TypePill(
-      {required this.label, required this.selected, required this.onTap});
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.milego;
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: selected ? AppColors.primary : c.surface,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: selected ? AppColors.primary : c.border),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: selected ? Colors.white : c.textPrimary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }
 

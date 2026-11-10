@@ -22,8 +22,14 @@ class GeminiService {
   GeminiService._();
 
   static const _model = 'gemini-3.1-flash-lite';
+  // La clé passe en en-tête (x-goog-api-key) et non en query string : une
+  // URL finit dans les logs (proxy, http, crash reports), pas un en-tête.
   static final _endpoint = Uri.parse(
-      'https://generativelanguage.googleapis.com/v1beta/models/$_model:generateContent?key=$geminiApiKey');
+      'https://generativelanguage.googleapis.com/v1beta/models/$_model:generateContent');
+
+  /// Nombre max de messages d'historique envoyés : borne le coût en tokens
+  /// et la latence quand la conversation s'allonge.
+  static const _maxHistory = 10;
 
   static Future<String> reply({
     required String question,
@@ -35,7 +41,10 @@ class GeminiService {
     final response = await http
         .post(
           _endpoint,
-          headers: {'Content-Type': 'application/json'},
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': geminiApiKey,
+          },
           body: jsonEncode({
             'system_instruction': {
               'parts': [
@@ -43,7 +52,9 @@ class GeminiService {
               ],
             },
             'contents': [
-              for (final m in history)
+              for (final m in history.length > _maxHistory
+                  ? history.sublist(history.length - _maxHistory)
+                  : history)
                 {
                   'role': m.role == ChatRole.user ? 'user' : 'model',
                   'parts': [

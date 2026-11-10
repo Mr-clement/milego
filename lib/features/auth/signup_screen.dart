@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/providers/app_providers.dart';
+import '../../shared/widgets/milego_text_field.dart';
 
 /// Inscription — crée le compte local (voir AuthService).
 class SignupScreen extends ConsumerStatefulWidget {
@@ -20,6 +21,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _password = TextEditingController();
   final _confirm = TextEditingController();
   String? _error;
+  bool _busy = false; // hachage PBKDF2 en cours
 
   @override
   void dispose() {
@@ -52,12 +54,22 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       return;
     }
 
-    setState(() => _error = null);
-    await ref
-        .read(authServiceProvider)
-        .signUp(name: name, email: email, password: password);
-    ref.read(userNameProvider.notifier).state = name;
+    final auth = ref.read(authServiceProvider);
+    // App mono-compte : réinscrire écraserait le mot de passe existant et
+    // permettrait d'accéder aux données sans le connaître.
+    if (auth.hasAccount) {
+      setState(() => _error =
+          'Un compte existe déjà sur cet appareil. Connectez-vous.');
+      return;
+    }
+
+    setState(() {
+      _error = null;
+      _busy = true;
+    });
+    await auth.signUp(name: name, email: email, password: password);
     if (!mounted) return;
+    ref.read(userNameProvider.notifier).state = name;
     context.go('/bilan');
   }
 
@@ -91,18 +103,18 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               Text('Vos données restent sur cet appareil.',
                   style: TextStyle(color: c.textMuted, fontSize: 14)),
               const SizedBox(height: 28),
-              _AuthField(controller: _name, hint: 'Nom'),
+              MilegoTextField(controller: _name, hint: 'Nom'),
               const SizedBox(height: 12),
-              _AuthField(
+              MilegoTextField(
                 controller: _email,
                 hint: 'Email',
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 12),
-              _AuthField(
+              MilegoTextField(
                   controller: _password, hint: 'Mot de passe', obscure: true),
               const SizedBox(height: 12),
-              _AuthField(
+              MilegoTextField(
                   controller: _confirm,
                   hint: 'Confirmer le mot de passe',
                   obscure: true),
@@ -113,7 +125,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               ],
               const SizedBox(height: 24),
               FilledButton(
-                onPressed: _submit,
+                onPressed: _busy ? null : _submit,
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   minimumSize: const Size(double.infinity, 52),
@@ -132,44 +144,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AuthField extends StatelessWidget {
-  const _AuthField({
-    required this.controller,
-    required this.hint,
-    this.obscure = false,
-    this.keyboardType,
-  });
-
-  final TextEditingController controller;
-  final String hint;
-  final bool obscure;
-  final TextInputType? keyboardType;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.milego;
-    return TextField(
-      controller: controller,
-      obscureText: obscure,
-      keyboardType: keyboardType,
-      style: TextStyle(color: c.textPrimary),
-      decoration: InputDecoration(
-        hintText: hint,
-        filled: true,
-        fillColor: c.surface,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: c.border),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: c.border),
         ),
       ),
     );

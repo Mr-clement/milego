@@ -15,6 +15,7 @@ class ExpenseBreakdownCard extends StatelessWidget {
     required this.total,
     required this.categories,
     this.onTap,
+    this.title = 'Répartition des dépenses',
   });
 
   /// Entrées categoryId -> montant, triées décroissant.
@@ -22,17 +23,22 @@ class ExpenseBreakdownCard extends StatelessWidget {
   final double total;
   final List<Category> categories;
   final VoidCallback? onTap;
+  final String title;
 
   @override
   Widget build(BuildContext context) {
     final c = context.milego;
-    // On garde les 4 premières catégories, le reste est agrégé en « Autres ».
+    // On garde les 4 premières catégories, le reste est agrégé en « Autres »
+    // (fusionné avec la catégorie « Autres » si elle est déjà dans le top,
+    // pour éviter deux lignes « Autres » dans la légende).
     final top = byCategory.take(4).toList();
     final restSum =
         byCategory.skip(4).fold<double>(0, (s, e) => s + e.value);
     final entries = [
-      ...top,
-      if (restSum > 0) MapEntry('autres', restSum),
+      for (final e in top)
+        e.key == fallbackCategoryId ? MapEntry(e.key, e.value + restSum) : e,
+      if (restSum > 0 && !top.any((e) => e.key == fallbackCategoryId))
+        MapEntry(fallbackCategoryId, restSum),
     ];
 
     final colors = AppColors.donut;
@@ -43,7 +49,7 @@ class ExpenseBreakdownCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Répartition des dépenses',
+            title,
             style: TextStyle(
               color: c.textPrimary,
               fontSize: 16,

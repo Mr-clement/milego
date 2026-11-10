@@ -64,6 +64,19 @@ class AppTheme {
       textTheme: textTheme,
       splashFactory: InkRipple.splashFactory,
       dividerColor: border,
+      // Style commun des champs texte (était dupliqué dans ~6 écrans).
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: surface,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.chip),
+          borderSide: BorderSide(color: border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.chip),
+          borderSide: BorderSide(color: border),
+        ),
+      ),
       extensions: [
         MilegoColors(
           bg: bg,

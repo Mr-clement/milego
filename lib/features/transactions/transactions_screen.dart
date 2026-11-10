@@ -21,17 +21,26 @@ class TransactionsScreen extends ConsumerStatefulWidget {
 class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   String _query = '';
 
+  /// L'animation d'entrée n'est jouée qu'au premier affichage : sans cette
+  /// borne, chaque tuile reconstruite par le ListView (retour dans la zone
+  /// visible au défilement) rejouait son fondu, ce qui provoquait du jank.
+  final _shownAt = DateTime.now();
+  bool get _playIntro =>
+      DateTime.now().difference(_shownAt) < const Duration(milliseconds: 500);
+
   @override
   Widget build(BuildContext context) {
     final c = context.milego;
     final txs = ref.watch(transactionsProvider);
     final categories = ref.watch(categoriesProvider);
-    final filtered = txs.where((t) {
-      if (_query.isEmpty) return true;
-      final q = _query.toLowerCase();
-      return t.title.toLowerCase().contains(q) ||
-          categories.byId(t.categoryId).name.toLowerCase().contains(q);
-    }).toList();
+    final q = _query.trim().toLowerCase();
+    final filtered = q.isEmpty
+        ? txs
+        : txs
+            .where((t) =>
+                t.title.toLowerCase().contains(q) ||
+                categories.byId(t.categoryId).name.toLowerCase().contains(q))
+            .toList();
 
     return SafeArea(
       bottom: false,
@@ -71,17 +80,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
               decoration: InputDecoration(
                 hintText: 'Rechercher (titre, catégorie)…',
                 prefixIcon: Icon(Icons.search_rounded, color: c.textMuted),
-                filled: true,
-                fillColor: c.surface,
                 contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: c.border),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: c.border),
-                ),
               ),
             ),
           ),
@@ -97,13 +96,17 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                 : ListView.builder(
                     padding: const EdgeInsets.fromLTRB(18, 8, 18, 120),
                     itemCount: filtered.length,
-                    itemBuilder: (_, i) => _TxTile(tx: filtered[i])
-                        .animate()
-                        .fadeIn(
-                          duration: 220.ms,
-                          delay: (i * 25).clamp(0, 200).ms,
-                        )
-                        .slideY(begin: 0.06, curve: Curves.easeOut),
+                    itemBuilder: (_, i) {
+                      final tile = _TxTile(tx: filtered[i]);
+                      if (!_playIntro) return tile;
+                      return tile
+                          .animate()
+                          .fadeIn(
+                            duration: 220.ms,
+                            delay: (i * 25).clamp(0, 200).ms,
+                          )
+                          .slideY(begin: 0.06, curve: Curves.easeOut);
+                    },
                   ),
           ),
         ],

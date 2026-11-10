@@ -33,8 +33,8 @@ class SettingsScreen extends ConsumerWidget {
                 SwitchListTile(
                   value: isDark,
                   onChanged: (v) =>
-                      ref.read(themeModeProvider.notifier).state =
-                          v ? ThemeMode.dark : ThemeMode.light,
+                      ref.read(themeModeProvider.notifier).set(
+                          v ? ThemeMode.dark : ThemeMode.light),
                   title: Text('Mode sombre',
                       style: TextStyle(color: c.textPrimary)),
                   secondary:

@@ -5,6 +5,8 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/models/models.dart';
 import '../../shared/providers/app_providers.dart';
+import '../../shared/widgets/milego_text_field.dart';
+import '../../shared/widgets/type_pill.dart';
 
 /// Feuille modale d'ajout (ou d'édition si [existing] est fourni) d'une
 /// transaction (revenu / dépense).
@@ -115,13 +117,13 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
             // Type revenu / dépense
             Row(
               children: [
-                _TypePill(
+                TypePill(
                   label: 'Dépense',
                   selected: _type == TxType.expense,
                   onTap: () => setState(() => _type = TxType.expense),
                 ),
                 const SizedBox(width: 10),
-                _TypePill(
+                TypePill(
                   label: 'Revenu',
                   selected: _type == TxType.income,
                   onTap: () => setState(() => _type = TxType.income),
@@ -130,9 +132,9 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
             ),
             const SizedBox(height: 16),
 
-            _Field(controller: _title, hint: 'Titre (ex : Courses)'),
+            MilegoTextField(controller: _title, hint: 'Titre (ex : Courses)'),
             const SizedBox(height: 12),
-            _Field(
+            MilegoTextField(
               controller: _amount,
               hint: 'Montant (FCFA)',
               keyboardType: TextInputType.number,
@@ -192,75 +194,6 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
               ),
             ],
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _TypePill extends StatelessWidget {
-  const _TypePill(
-      {required this.label, required this.selected, required this.onTap});
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.milego;
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: selected ? AppColors.primary : c.surface,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-                color: selected ? AppColors.primary : c.border),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: selected ? Colors.white : c.textPrimary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _Field extends StatelessWidget {
-  const _Field({
-    required this.controller,
-    required this.hint,
-    this.keyboardType,
-  });
-  final TextEditingController controller;
-  final String hint;
-  final TextInputType? keyboardType;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.milego;
-    return TextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      style: TextStyle(color: c.textPrimary),
-      decoration: InputDecoration(
-        hintText: hint,
-        filled: true,
-        fillColor: c.surface,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: c.border),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: c.border),
         ),
       ),
     );

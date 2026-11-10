@@ -20,12 +20,12 @@ class _OnboardingPage {
 }
 
 const _imagePool = [
-  'assets/onboarding/onboarding_pool_1.jpg',
-  'assets/onboarding/onboarding_pool_2.jpg',
-  'assets/onboarding/onboarding_pool_3.jpg',
-  'assets/onboarding/onboarding_pool_4.jpg',
-  'assets/onboarding/onboarding_pool_5.jpg',
-  'assets/onboarding/onboarding_pool_6.jpg',
+  'assets/onboarding/onboarding_pool_1.webp',
+  'assets/onboarding/onboarding_pool_2.webp',
+  'assets/onboarding/onboarding_pool_3.webp',
+  'assets/onboarding/onboarding_pool_4.webp',
+  'assets/onboarding/onboarding_pool_5.webp',
+  'assets/onboarding/onboarding_pool_6.webp',
 ];
 
 const _titles = [
@@ -168,10 +168,16 @@ class _PageContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Décode l'image à la hauteur physique de l'écran (BoxFit.cover en
+    // portrait : c'est la hauteur qui contraint) plutôt qu'en pleine
+    // résolution — divise l'empreinte mémoire du décodage.
+    final cacheHeight = (MediaQuery.sizeOf(context).height *
+            MediaQuery.devicePixelRatioOf(context))
+        .round();
     return Stack(
       fit: StackFit.expand,
       children: [
-        Image.asset(page.image, fit: BoxFit.cover),
+        Image.asset(page.image, fit: BoxFit.cover, cacheHeight: cacheHeight),
         DecoratedBox(
           decoration: BoxDecoration(
             gradient: LinearGradient(

@@ -19,9 +19,22 @@ class Category {
   final Color color;
 }
 
+/// Index id -> catégorie, construit une seule fois par instance de liste.
+/// Les listes de catégories ne sont jamais modifiées après chargement
+/// (provider en lecture seule) : l'index ne peut pas devenir obsolète.
+final _categoryIndex = Expando<Map<String, Category>>('categoryIndex');
+
+/// Id de la catégorie de repli quand un id est inconnu.
+const fallbackCategoryId = 'autres';
+
 extension CategoryLookup on List<Category> {
-  Category byId(String id) =>
-      firstWhere((c) => c.id == id, orElse: () => last);
+  /// Recherche O(1) (appelée par tuile de liste, ligne de légende et frappe
+  /// de recherche). Repli sur « Autres », puis sur la dernière catégorie.
+  Category byId(String id) {
+    final index =
+        _categoryIndex[this] ??= {for (final c in this) c.id: c};
+    return index[id] ?? index[fallbackCategoryId] ?? last;
+  }
 }
 
 @immutable

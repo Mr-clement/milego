@@ -6,6 +6,7 @@ import '../../core/services/auth/auth_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/providers/app_providers.dart';
+import '../../shared/widgets/milego_text_field.dart';
 
 /// Connexion — vérifie le compte local (voir AuthService). Pas de
 /// réinitialisation de mot de passe (pas de service d'email en local).
@@ -20,6 +21,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   String? _error;
+  bool _busy = false; // hachage PBKDF2 en cours
 
   @override
   void dispose() {
@@ -30,17 +32,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _submit() async {
     final AuthService auth = ref.read(authServiceProvider);
+    setState(() => _busy = true);
     final ok = await auth.logIn(
       email: _email.text.trim(),
       password: _password.text,
     );
+    if (!mounted) return;
+    setState(() => _busy = false);
     if (!ok) {
       setState(() => _error = 'Email ou mot de passe incorrect.');
       return;
     }
     setState(() => _error = null);
     ref.read(userNameProvider.notifier).state = auth.userName ?? '';
-    if (!mounted) return;
     context.go('/bilan');
   }
 
@@ -74,13 +78,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               Text('Connectez-vous à votre compte Milego.',
                   style: TextStyle(color: c.textMuted, fontSize: 14)),
               const SizedBox(height: 28),
-              _AuthField(
+              MilegoTextField(
                 controller: _email,
                 hint: 'Email',
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 12),
-              _AuthField(
+              MilegoTextField(
                   controller: _password, hint: 'Mot de passe', obscure: true),
               if (_error != null) ...[
                 const SizedBox(height: 12),
@@ -89,7 +93,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ],
               const SizedBox(height: 24),
               FilledButton(
-                onPressed: _submit,
+                onPressed: _busy ? null : _submit,
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   minimumSize: const Size(double.infinity, 52),
@@ -108,44 +112,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AuthField extends StatelessWidget {
-  const _AuthField({
-    required this.controller,
-    required this.hint,
-    this.obscure = false,
-    this.keyboardType,
-  });
-
-  final TextEditingController controller;
-  final String hint;
-  final bool obscure;
-  final TextInputType? keyboardType;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.milego;
-    return TextField(
-      controller: controller,
-      obscureText: obscure,
-      keyboardType: keyboardType,
-      style: TextStyle(color: c.textPrimary),
-      decoration: InputDecoration(
-        hintText: hint,
-        filled: true,
-        fillColor: c.surface,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: c.border),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: c.border),
         ),
       ),
     );

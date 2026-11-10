@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
 import '../../shared/providers/app_providers.dart';
+import '../../shared/widgets/milego_text_field.dart';
 
 /// Feuille modale d'ajout d'un objectif d'épargne.
 class AddGoalSheet extends ConsumerStatefulWidget {
@@ -92,15 +93,15 @@ class _AddGoalSheetState extends ConsumerState<AddGoalSheet> {
               ),
             ),
             const SizedBox(height: 16),
-            _Field(controller: _name, hint: 'Nom (ex : Voyage Zanzibar)'),
+            MilegoTextField(controller: _name, hint: 'Nom (ex : Voyage Zanzibar)'),
             const SizedBox(height: 12),
-            _Field(
+            MilegoTextField(
               controller: _target,
               hint: 'Montant cible (FCFA)',
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 12),
-            _Field(
+            MilegoTextField(
               controller: _current,
               hint: 'Montant déjà épargné (optionnel)',
               keyboardType: TextInputType.number,
@@ -149,40 +150,6 @@ class _AddGoalSheetState extends ConsumerState<AddGoalSheet> {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Field extends StatelessWidget {
-  const _Field({
-    required this.controller,
-    required this.hint,
-    this.keyboardType,
-  });
-  final TextEditingController controller;
-  final String hint;
-  final TextInputType? keyboardType;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.milego;
-    return TextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      style: TextStyle(color: c.textPrimary),
-      decoration: InputDecoration(
-        hintText: hint,
-        filled: true,
-        fillColor: c.surface,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: c.border),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: c.border),
         ),
       ),
     );

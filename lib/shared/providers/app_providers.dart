@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar_community/isar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/services/auth/auth_service.dart';
 import '../../core/services/isar/fast_hash.dart';
@@ -31,16 +32,57 @@ final categoriesProvider = Provider<List<Category>>(
   (ref) => throw UnimplementedError('categoriesProvider doit être surchargé (voir main.dart)'),
 );
 
-/// Thème clair / sombre (toggle via l'icône soleil de l'en-tête).
+/// SharedPreferences, injecté via `overrideWithValue` dans `main()` (et
+/// dans les tests).
+final sharedPreferencesProvider = Provider<SharedPreferences>(
+  (ref) => throw UnimplementedError('sharedPreferencesProvider doit être surchargé (voir main.dart)'),
+);
+
+/// Thème clair / sombre (toggle via l'icône soleil de l'en-tête), persisté
+/// dans SharedPreferences pour survivre au redémarrage.
+class ThemeModeNotifier extends Notifier<ThemeMode> {
+  static const _key = 'theme_mode';
+
+  @override
+  ThemeMode build() {
+    final saved = ref.watch(sharedPreferencesProvider).getString(_key);
+    return ThemeMode.values.firstWhere(
+      (m) => m.name == saved,
+      orElse: () => ThemeMode.light,
+    );
+  }
+
+  void set(ThemeMode mode) {
+    state = mode;
+    unawaited(ref.read(sharedPreferencesProvider).setString(_key, mode.name));
+  }
+}
+
 final themeModeProvider =
-    StateProvider<ThemeMode>((ref) => ThemeMode.light);
+    NotifierProvider<ThemeModeNotifier, ThemeMode>(ThemeModeNotifier.new);
 
-/// Nom affiché dans la salutation.
-final userNameProvider = StateProvider<String>((ref) => 'Clément');
+/// Nom affiché dans la salutation : celui du compte local (mis à jour à la
+/// connexion / l'inscription).
+final userNameProvider = StateProvider<String>(
+  (ref) => ref.watch(authServiceProvider).userName ?? '',
+);
 
-/// Source des transactions, persistée dans Isar. L'état local est mis à
-/// jour immédiatement (UI réactive), l'écriture Isar se fait en tâche de
-/// fond (pas de retry/rollback — hors scope MVP, écriture locale fiable).
+/// Écriture Isar en tâche de fond. L'état local est déjà à jour (UI
+/// réactive) ; un échec n'est pas annulé (hors scope MVP) mais il est
+/// remonté via [FlutterError.reportError] au lieu d'être perdu en silence
+/// par un `unawaited` nu.
+void _persist(Isar isar, Future<void> Function() write) {
+  unawaited(isar.writeTxn(write).catchError((Object e, StackTrace st) {
+    FlutterError.reportError(FlutterErrorDetails(
+      exception: e,
+      stack: st,
+      library: 'milego persistence',
+      context: ErrorDescription("lors d'une écriture Isar"),
+    ));
+  }));
+}
+
+/// Source des transactions, persistée dans Isar via [_persist].
 class TransactionsNotifier extends StateNotifier<List<Transaction>> {
   TransactionsNotifier(this._isar, List<Transaction> initial) : super(initial);
 
@@ -48,20 +90,19 @@ class TransactionsNotifier extends StateNotifier<List<Transaction>> {
 
   void add(Transaction tx) {
     state = [tx, ...state];
-    unawaited(_isar.writeTxn(
-        () => _isar.transactionEntitys.put(TransactionEntity.fromDomain(tx))));
+    _persist(_isar,
+        () => _isar.transactionEntitys.put(TransactionEntity.fromDomain(tx)));
   }
 
   void update(Transaction tx) {
     state = [for (final t in state) t.id == tx.id ? tx : t];
-    unawaited(_isar.writeTxn(
-        () => _isar.transactionEntitys.put(TransactionEntity.fromDomain(tx))));
+    _persist(_isar,
+        () => _isar.transactionEntitys.put(TransactionEntity.fromDomain(tx)));
   }
 
   void remove(String id) {
     state = state.where((t) => t.id != id).toList();
-    unawaited(_isar
-        .writeTxn(() => _isar.transactionEntitys.delete(fastHash(id))));
+    _persist(_isar, () => _isar.transactionEntitys.delete(fastHash(id)));
   }
 }
 
@@ -105,12 +146,12 @@ class GoalsNotifier extends StateNotifier<List<SavingGoal>> {
       ..currentAmount = currentAmount
       ..deadline = deadline
       ..paletteIndex = paletteIndex;
-    unawaited(_isar.writeTxn(() => _isar.goalEntitys.put(entity)));
+    _persist(_isar, () => _isar.goalEntitys.put(entity));
   }
 
   void remove(String id) {
     state = state.where((g) => g.id != id).toList();
-    unawaited(_isar.writeTxn(() => _isar.goalEntitys.delete(fastHash(id))));
+    _persist(_isar, () => _isar.goalEntitys.delete(fastHash(id)));
   }
 }
 

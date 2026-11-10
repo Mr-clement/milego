@@ -26,14 +26,13 @@ Future<void> main() async {
 
   runApp(ProviderScope(
     overrides: [
+      sharedPreferencesProvider.overrideWithValue(prefs),
       authServiceProvider.overrideWithValue(authService),
       isarProvider.overrideWithValue(isar),
       categoriesProvider.overrideWithValue(categories),
       transactionsProvider
           .overrideWith((ref) => TransactionsNotifier(isar, transactions)),
       goalsProvider.overrideWith((ref) => GoalsNotifier(isar, goals)),
-      if (authService.isLoggedIn && authService.userName != null)
-        userNameProvider.overrideWith((ref) => authService.userName!),
     ],
     child: MilegoApp(router: router),
   ));

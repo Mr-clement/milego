@@ -32,9 +32,12 @@ class IsarService {
   }
 
   static Future<List<Transaction>> loadTransactions(Isar isar) async {
-    var entities = await isar.transactionEntitys.where().sortByDate().findAll();
+    var entities = await isar.transactionEntitys.where().sortByDateDesc().findAll();
     if (entities.isEmpty) {
-      final seed = MockData.transactions().map(TransactionEntity.fromDomain).toList();
+      final seed = MockData.transactions().map(TransactionEntity.fromDomain).toList()
+        // Même ordre que la requête ci-dessus : plus récente d'abord
+        // (cohérent avec TransactionsNotifier.add qui insère en tête).
+        ..sort((a, b) => b.date.compareTo(a.date));
       await isar.writeTxn(() => isar.transactionEntitys.putAll(seed));
       entities = seed;
     }

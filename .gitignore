@@ -46,3 +46,13 @@ app.*.map.json
 
 # Secrets — jamais commités (voir env.example.dart pour le template)
 /lib/core/config/env.dart
+
+# Lib native Isar téléchargée par Isar.initializeIsarCore(download: true)
+# lors de `flutter test` — régénérée à la demande, jamais commitée.
+/isar.dll
+/libisar.so
+/libisar.dylib
+
+# Sorties de build Android (rapports Gradle, etc.)
+/android/build/
+/android/app/build/

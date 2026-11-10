@@ -45,6 +45,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Future<void> _send() async {
+    // Une seule question à la fois : sinon deux réponses arrivent dans le
+    // désordre et l'historique envoyé à Gemini est incohérent.
+    if (_typing) return;
     final text = _controller.text.trim();
     if (text.isEmpty) return;
     final summary = ref.read(monthSummaryProvider);
@@ -136,6 +139,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             ),
           ),
           _SuggestionsBar(onPick: (q) {
+            if (_typing) return;
             _controller.text = q;
             _send();
           }),
@@ -164,8 +168,10 @@ class _Bubble extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        // sizeOf : ne reconstruit la bulle que si la taille change (pas à
+        // chaque variation de viewInsets quand le clavier s'ouvre).
         constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.78),
+            maxWidth: MediaQuery.sizeOf(context).width * 0.78),
         decoration: BoxDecoration(
           color: isUser ? AppColors.primary : c.surface,
           borderRadius: BorderRadius.only(
@@ -246,10 +252,10 @@ class _Composer extends StatelessWidget {
                 controller: controller,
                 onSubmitted: (_) => onSend(),
                 style: TextStyle(color: c.textPrimary),
+                // Fond et bordures : InputDecorationTheme ; seul le rayon
+                // (plus arrondi pour la bulle de saisie) est surchargé.
                 decoration: InputDecoration(
                   hintText: 'Écrire à Léa…',
-                  filled: true,
-                  fillColor: c.surface,
                   contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16, vertical: 12),
                   border: OutlineInputBorder(

@@ -57,11 +57,13 @@ void main() {
     final goals = loaded[2] as List<SavingGoal>;
 
     SharedPreferences.setMockInitialValues({});
-    final authService = AuthService(await SharedPreferences.getInstance());
+    final prefs = await SharedPreferences.getInstance();
+    final authService = AuthService(prefs);
     final router = buildAppRouter(initialLocation: '/bilan');
 
     await tester.pumpWidget(ProviderScope(
       overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
         authServiceProvider.overrideWithValue(authService),
         isarProvider.overrideWithValue(isar),
         categoriesProvider.overrideWithValue(categories),

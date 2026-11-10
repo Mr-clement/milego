@@ -51,8 +51,8 @@ class BilanScreen extends ConsumerWidget {
                 icon: isDark
                     ? Icons.dark_mode_rounded
                     : Icons.light_mode_rounded,
-                onTap: () => ref.read(themeModeProvider.notifier).state =
-                    isDark ? ThemeMode.light : ThemeMode.dark,
+                onTap: () => ref.read(themeModeProvider.notifier).set(
+                    isDark ? ThemeMode.light : ThemeMode.dark),
               ),
             ],
           ),
